@@ -1,0 +1,144 @@
+import plotly.graph_objects as go
+
+# ════════════════════════════════════════════════════════════════
+# KAFI FINANCIAL SANKEY — Cập nhật số liệu tại 2 block DATA bên dưới
+# ════════════════════════════════════════════════════════════════
+
+C = {
+    "g1":"#00C391","g2":"#07746E","g3":"#00D49A",
+    "r1":"#C00000","r2":"#E53E3E","r3":"#EF9A9A",
+    "y2":"#E8A020","b1":"#098A7E","b2":"#4A9B7F","b3":"#26A69A",
+    "sl":"#455A64",
+}
+
+def rgba(h,op):
+    r,g,b=int(h[1:3],16),int(h[3:5],16),int(h[5:7],16)
+    return f"rgba({r},{g},{b},{op})"
+
+def lbl(name, v25, v24=None):
+    if v24 and v24 > 0.01:
+        p=(v25-v24)/abs(v24)*100
+        yoy=f" <b>{'+' if p>=0 else ''}{p:.0f}%</b>"
+        col=C["g1"] if p>=0 else C["r2"]
+    else:
+        yoy,col="",C["g1"]
+    return (f"<b>{name}</b><br>"
+            f"<span style='font-size:10px'>{v25:,.1f} tỷ"
+            f"<span style='color:{col}'>{yoy}</span></span>  ")
+
+def make_chart(nodes, links, title, h=1000):
+    N=[lbl(*n[:3]) for n in nodes]
+    NC=[n[3] for n in nodes]
+    S=[l[0] for l in links]; T=[l[1] for l in links]
+    V=[l[2] for l in links]; LC=[rgba(l[3],l[4]) for l in links]
+    fig=go.Figure(go.Sankey(
+        arrangement="snap",
+        node=dict(pad=24,thickness=36,label=N,color=NC,
+                  line=dict(color="rgba(0,0,0,0.06)",width=0.8),
+                  hovertemplate='%{label}<extra></extra>',align='left'),
+        link=dict(source=S,target=T,value=V,color=LC,
+                  hovertemplate='%{source.label}→%{target.label}<br><b>%{value:,.1f}</b> tỷ<extra></extra>')
+    ))
+    fig.update_layout(
+        title_text=title,title_x=0.5,
+        title_font=dict(size=22,color=C["g2"],family="Inter, sans-serif"),
+        font=dict(family="Inter, sans-serif",size=12,color="#2E2E2E"),
+        width=1440,height=h,paper_bgcolor="white",
+        plot_bgcolor="rgba(250,250,250,0.95)",
+        margin=dict(l=60,r=100,t=120,b=60)
+    )
+    fig.add_annotation(text="© KAFI Research",x=0.99,y=0.01,
+        xref="paper",yref="paper",showarrow=False,
+        font=dict(size=10,color=rgba(C["g2"],.4),family="Inter"),xanchor="right")
+    fig.show()
+
+# ════════════════════════════════════════════════════════════════
+# DATA P&L — Cập nhật tại đây (FY2025, FY2024)
+# ════════════════════════════════════════════════════════════════
+_cp_tc = 733.1   # = CP TC (767.8) - DT TC (34.7)
+_lntt  = 455.7  # = LN gộp (1386.1) - CP TC net - CP QL (197.3)
+
+PL_NODES = [
+    # (tên,                           FY25,    FY24,    màu)
+    ("FVTPL (tự doanh)",          1776.1, 606.1, C["g2"]),
+    ("Lãi AFS",                   123.8, 0.7, C["b3"]),
+    ("Lãi cho vay (margin)",      775.9, 260.2, C["b1"]),
+    ("Môi giới CK",               158.9, 87.6, C["b2"]),
+    ("Lưu ký CK",                 5.2, 2.2, C["b2"]),
+    ("IB & tư vấn tài chính",     0.8, 0.3, C["b2"]),
+    ("Thu nhập HĐ khác",          1.0, 0.2, C["b2"]),
+    ("Doanh thu hoạt động",       2841.6, 957.3, C["g2"]),
+    ("CP hoạt động KD",           1455.5, 286.9, C["r1"]),
+    ("Lợi nhuận gộp",             1386.1, 670.4, C["g1"]),
+    ("Lỗ/CP FVTPL",               1142.7, 116.1, C["r1"]),
+    ("CP AFS",                    21.8, 0.0, C["r2"]),
+    ("CP dự phòng cho vay",       81.7, 60.3, C["r2"]),
+    ("CP tự doanh",               32.5, 12.7, C["r3"]),
+    ("CP môi giới CK",            167.1, 95.3, C["r2"]),
+    ("CP lưu ký CK",              9.8, 2.6, C["r3"]),
+    ("CP tài chính (lãi vay)",    733.1, None, C["r2"]),
+    ("CP quản lý",                197.3, 116.0, C["y2"]),
+    ("LNTT",                      457.5, 256.7, C["g2"]),
+    ("Thuế TNDN",                 92.9, 53.2, C["y2"]),
+    ("Lợi nhuận sau thuế",        364.7, 203.5, C["g3"]),
+]
+
+PL_LINKS = [
+    # (source, target, value,   màu,      opacity)
+    (0,7,1776.1, C["g2"],.32),(1,7,123.8, C["b3"],.28),
+    (2,7,775.9, C["b1"],.32),(3,7,158.9, C["b2"],.28),
+    (4,7,5.2, C["b2"],.22),(5,7,0.8, C["b2"],.20),
+    (6,7,1.0, C["b2"],.18),
+    (7,8,1455.5, C["r1"],.25),(7,9,1386.1, C["g1"],.32),
+    (8,10,1142.7, C["r1"],.28),(8,11,21.8, C["r2"],.22),
+    (8,12,81.7, C["r2"],.22),(8,13,32.5, C["r3"],.20),
+    (8,14,167.1, C["r2"],.22),(8,15,9.8, C["r3"],.20),
+    (9,16,733.1, C["r2"],.28),(9,17,197.3, C["y2"],.25),
+    (9,18,455.7, C["g2"],.38),
+    (18,19,92.9, C["y2"],.30),(18,20,364.7, C["g3"],.42),
+]
+
+make_chart(
+    [(n[0],n[1],n[2],n[3]) for n in PL_NODES],
+    PL_LINKS,
+    "<b>KAFI FY2025</b><br><sup>Báo cáo kết quả hoạt động - Đơn vị: tỷ VND | Kafi Research</sup>",
+    h=1000
+)
+
+# ════════════════════════════════════════════════════════════════
+# DATA BCĐKT — Cập nhật tại đây (Cuối năm, Đầu năm)
+# ════════════════════════════════════════════════════════════════
+BS_NODES = [
+    # (tên,                         Cuối năm,  Đầu năm,   màu)
+    ("Cho vay KH (margin)",     10882.9, 5359.6, C["b1"]),
+    ("FVTPL (tự doanh)",        8100.2, 8880.0, C["g2"]),
+    ("AFS (trái phiếu)",        5090.7, 659.9, C["b2"]),
+    ("Tiền & tương đương",      1625.0, 943.9, C["g1"]),
+    ("Các khoản phải thu",      254.1, 123.5, C["b3"]),
+    ("TS ngắn hạn khác",        17.4, 8.4, C["b3"]),
+    ("Trả trước & PT DV",       22.4, 13.6, C["b3"]),
+    ("Tài sản dài hạn",         139.4, 75.5, C["b3"]),
+    ("Tổng tài sản",            26131.5, 16054.9, C["sl"]),
+    ("Vay ngắn hạn",            17537.6, 10474.1, C["r1"]),
+    ("Phải trả HĐ & người bán", 402.9, 3.8, C["r2"]),
+    ("Thuế, CP phải trả & khác",319.2, 290.0, C["r2"]),
+    ("Vốn góp",                 7500.0, 5000.0, C["g2"]),
+    ("LNST chưa phân phối",     371.6, 272.7, C["g1"]),
+]
+
+BS_LINKS = [
+    (0,8,10882.9, C["b1"],.30),(1,8,8100.2, C["g2"],.28),
+    (2,8,5090.7, C["b2"],.28),(3,8,1625.0, C["g1"],.28),
+    (4,8,254.1, C["b3"],.22),(5,8,17.4, C["b3"],.20),
+    (6,8,22.4, C["b3"],.20),(7,8,139.4, C["b3"],.18),
+    (8,9,17537.6, C["r1"],.28),(8,10,402.9, C["r2"],.22),
+    (8,11,319.2, C["r2"],.20),(8,12,7500.0, C["g2"],.32),
+    (8,13,371.6, C["g1"],.30),
+]
+
+make_chart(
+    [(n[0],n[1],n[2],n[3]) for n in BS_NODES],
+    BS_LINKS,
+    "<b>KAFI — Bảng cân đối kế toán 31/12/2025</b><br><sup>Cấu trúc tài sản & nguồn vốn - Đơn vị: tỷ VND | Kafi Research</sup>",
+    h=900
+)
